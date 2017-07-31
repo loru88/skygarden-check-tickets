@@ -1,11 +1,29 @@
 'use strict';
 
-//-- settings ----------------------------------------------------------------------------------------
 const START_DATE = new Date();
-const END_DATE = '2017-12-31';
+const END_DATE = new Date(START_DATE.getFullYear(),START_DATE.getMonth()+1,START_DATE.getDate()); // check for 1 month
 const CHECK_DELAY_MSEC = 30000;
 const SHOW_ZERO_SPACES = false;
+const TIMEOUT = 60000;
 
+/** --------------------------------------------------------------------------------------------------
+* Take screen shot of the booking web site
+*/
+
+/*function webshot1(paramUrl,paramOutFilename,paramDelay,cb) {
+	let webshot = require('webshot');
+
+	const options = {
+		windowSize: {width: 1024, height: 768},
+		shotSize: {width: 'all', height: 'all'},
+		renderDelay: paramDelay,
+		timeout: 60000,
+		errorIfStatusIsNot200: true
+	}
+
+	webshot(paramUrl,paramOutFilename,options,cb);
+}
+*/
 
 class CheckTickets {
 
@@ -43,9 +61,9 @@ class CheckTickets {
 			const httpTimeout=setTimeout(
 				()=>{
 					console.log(`SkyGarden: ${this.dateToCheckStr}: Error: HTTP request timeout.`);
-					resolve(`SkyGarden: ${this.dateToCheckStr}: Error: HTTP request timeout.`); // i don't want to reject() as i still want to show other results
+					resolve(`SkyGarden: ${this.dateToCheckStr}: Error: HTTP request timeout.`);
 				}, 
-				10000
+				TIMEOUT
 				); // setTimeout()
 			this.getStatus((err,result)=>{
 				clearTimeout(httpTimeout);
@@ -54,19 +72,13 @@ class CheckTickets {
 					resolve(`SkyGarden: ${this.dateToCheckStr}: HTTP Error: ${JSON.stringify(err)}`);
 				} else {
 					this.result = result;
-					if (result.numSlots*1 > 0) {
-						// available
-						console.log(`SkyGarden: ${this.dateToCheckStr} *Slot available*: (${result.numSlots}). !!!!!!!!!!!!!!!!!!`);
-						let msg = '';
-						for (let key in result.numFreeSpaces) {
-							if (msg=='') msg=`SkyGarden: ${this.dateToCheckStr}: ${result.numSlots} slots:\n`;
-							msg += (`--  ${key.split('T')[1]}: ${result.numFreeSpaces[key]} spaces.\n`);
-						}
-						this.resultMsg = msg;
-					} else if (result.numSlots*1 != 0) {
-						console.log(`SkyGarden: ${this.dateToCheckStr} unexpected result.numSlots: (${result.numSlots}).`);			
-						resolve(`${this.dateToCheckStr} unexpected result: num of slots=${result.numSlots}.`);
+					// available
+					let msg = '';
+					for (let key in result.numFreeSpaces) {
+						console.log(`** ${key}: ${result.numFreeSpaces[key]} spaces.\n`);
+						msg += (`** ${key}: ${result.numFreeSpaces[key]} spaces.\n`);
 					}
+					this.resultMsg = msg;
 					resolve(this);
 				}
 			}); // getStatus()
@@ -79,12 +91,12 @@ class CheckTickets {
 	* @callback - callback function to be called when data retrieved
 	*/
 	getStatus(callback) {
-		//console.log('SkyGarden: getStatus(): path:',`/api/v1/37002/event_chains?start_date=${inDate}&end_date=${inDate}`)
+		// Request URL: https://skygarden.bookingbug.com/api/v1/37002/events?start_date=2017-08-08&end_date=2017-08-08
 		let returnValue = {};
 		const https = require('https');
 		const options = {
 			host: 'skygarden.bookingbug.com',
-			path: `/api/v1/37002/event_chains?start_date=${this.dateToCheckStr}&end_date=${this.dateToCheckStr}`,
+			path: `/api/v1/37002/events?start_date=${this.dateToCheckStr}&end_date=${this.dateToCheckStr}`,
 			headers: {
 				'App-Id': 'f6b16c23', 
 				'App-Key': 'f0bc4f65f4fbfe7b4b3b7264b655f5eb',
@@ -92,7 +104,7 @@ class CheckTickets {
 				'Host': 'skygarden.bookingbug.com',
 				'Origin': 'https://bespoke.bookingbug.com',
 				'Referer': 'https://bespoke.bookingbug.com/skygarden/new_booking.html'
-			} // get it from the Sky Garden official web site
+			}
 		}
 		https.get(options, (res)=>{
 			let resdata='';
@@ -103,29 +115,25 @@ class CheckTickets {
 				resdata=JSON.parse(resdata);
 				//console.log('getStatus: resdata',JSON.stringify(resdata));
 				returnValue.resData = resdata;
-				returnValue.numSlots = resdata.total_entries;
 				returnValue.numFreeSpaces = [];
-				returnValue.numTicketSpaces = [];
-				if (resdata.total_entries > 1) {
+				if (resdata.total_entries > 0) {
 					try{
-						for (let thisEventKey in resdata._embedded.event_chains) {
-							const thisEvent = resdata._embedded.event_chains[thisEventKey];
+						for (let thisEventKey in resdata._embedded.events) {
+							const thisEvent = resdata._embedded.events[thisEventKey];
+							const eventDateTime = thisEvent.datetime;
 
-							const eventDate = thisEvent.start_date;
-							const eventTime = thisEvent.time.split('T')[1];
-							const eventSpaces = thisEvent.spaces;
-
-							if (SHOW_ZERO_SPACES || eventSpaces>0) {
-								for (let thisTicketKey in thisEvent._embedded.ticket_sets) {
-									const thisTicket = thisEvent._embedded.ticket_sets[thisTicketKey];
-
-									if (thisTicket.name=='Adult' && thisTicket.pool_name=='Admittance') {
-										console.log('getStatus(): start_date=',eventDate,'time=',eventTime,'ticket spaces=',thisTicket.spaces);
-										// only return result if it is adult admittance ticket
-										returnValue.numFreeSpaces[eventDate+'T'+eventTime] = eventSpaces;
-										returnValue.numTicketSpaces[eventDate+'T'+eventTime] = thisTicket.spaces;
-									}
+							let eventFreeSpaces = 0;
+							let prevTicketKey=999999;
+							for (let thisTicketKey in thisEvent['ticket_spaces']) {
+								if (prevTicketKey*1 > thisTicketKey*1) { // only get smaller one
+									prevTicketKey = thisTicketKey;
+									eventFreeSpaces = thisEvent['ticket_spaces'][thisTicketKey].left;
 								}
+							}
+
+							if (SHOW_ZERO_SPACES || eventFreeSpaces>0) {
+								console.log(`getStatus(): ${eventDateTime} : ${eventFreeSpaces}`);
+								returnValue.numFreeSpaces[eventDateTime]=eventFreeSpaces;
 							}
 						}
 					} catch(e) {
@@ -142,12 +150,12 @@ class CheckTickets {
 
 };
 
-// Send message to Telegram: "https://api.telegram.org/<bot_id>:<api_key>/sendMessage?chat_id=@<channel_name>&text=" & $msg
+// Send message to Telegram: "https://api.telegram.org/<bot_id>:<api_token>/sendMessage?chat_id=@<channel_name>&text=" & $msg
 function sendMsg(msg) {
 	const https = require('https');
 	const options = {
 		host: 'api.telegram.org',
-		path: `/<bot_id>:<api_key>/sendMessage?chat_id=@<channel_name>&text=${encodeURI(msg)}`,
+		path: `/<bot_id>:<api_token>/sendMessage?chat_id=@<channel_name>&text=${encodeURI(msg)}`,
 		headers: {
 		}
 	}
@@ -199,9 +207,10 @@ Promise.all(allCheckPromises)
 	.then((values)=>{
 		console.log('All checks finished');
 		for (let k in values) {''
-			console.log('Result:', (values[k] instanceof CheckTickets)? 'result: '+values[k].resultMsg : 'error: '+values[k]);
-			if (values[k] instanceof CheckTickets && values[k].resultMsg!='') sendMsg(values[k].resultMsg);
-			else if (values[k].constructor===String) sendMsg(values[k]);
+			//console.log('Result:', (values[k] instanceof CheckTickets)? 'result: '+values[k].resultMsg : 'error: '+values[k]);
+			if (values[k] instanceof CheckTickets && values[k].resultMsg!=='') {
+				sendMsg(values[k].resultMsg);
+			} else if (values[k].constructor===String) sendMsg(values[k]);
 		}
 	}) // Promise.all(allCheckPromises).then()
 	.catch((reason)=>{
