@@ -1,5 +1,5 @@
 # skygarden-check-tickets
-A simple script to send alert when there booking is available for Sky Garden London
+A simple script to send message when free ticket for the Sky Garden, London is available
 
 ## Get started
 1. Install Node.js if you don't have it
@@ -21,4 +21,4 @@ const SHOW_ZERO_SPACES = false;
 ```
 
 ## Tips
-* You might want to schedule this to be run daily to check the ticket availability automatically.
+* You might want to schedule this to be run daily to check the ticket availability automatically.  You may create a cron job or windows scheduled task to run it every half hour.
