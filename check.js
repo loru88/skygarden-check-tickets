@@ -6,25 +6,6 @@ const CHECK_DELAY_MSEC = 30000;
 const SHOW_ZERO_SPACES = false;
 const TIMEOUT = 60000;
 
-/** --------------------------------------------------------------------------------------------------
-* Take screen shot of the booking web site
-*/
-
-/*function webshot1(paramUrl,paramOutFilename,paramDelay,cb) {
-	let webshot = require('webshot');
-
-	const options = {
-		windowSize: {width: 1024, height: 768},
-		shotSize: {width: 'all', height: 'all'},
-		renderDelay: paramDelay,
-		timeout: 60000,
-		errorIfStatusIsNot200: true
-	}
-
-	webshot(paramUrl,paramOutFilename,options,cb);
-}
-*/
-
 class CheckTickets {
 
 	constructor(inDate) {
@@ -150,7 +131,9 @@ class CheckTickets {
 
 };
 
-// Send message to Telegram: "https://api.telegram.org/<bot_id>:<api_token>/sendMessage?chat_id=@<channel_name>&text=" & $msg
+/** ----------------------------------------------------------------------------------------------------
+* Send message to Telegram: "https://api.telegram.org/<bot_id>:<api_token>/sendMessage?chat_id=@<channel_name>&text=" & $msg
+*/
 function sendMsg(msg) {
 	const https = require('https');
 	const options = {
@@ -169,24 +152,6 @@ function sendMsg(msg) {
 
 /** ----------------------------------------------------------------------------------------------------
 * Main
-*/
-
-/*
-const now = new Date(); // for output filename format
-webshot1(
-	'http://skygarden.london/booking',
-	`./webshot_output/skygarden-${now.getFullYear()}-${('0'+(now.getMonth()+1)).slice(-2)}-${('0'+now.getDate()).slice(-2)}-${('0'+now.getHours()).slice(-2)}${('0'+now.getMinutes()).slice(-2)}${('0'+now.getSeconds()).slice(-2)}.png`,
-	5000,
-	(err)=>{
-				if (err) {
-					// write error
-					console.log(`${new Date()} - Webshot error`);
-				} else {
-					// write done
-					console.log(`${new Date()} - Webshot success`);
-				}
-			}
-	);
 */
 
 console.log('SkyGarden: start checking...');
