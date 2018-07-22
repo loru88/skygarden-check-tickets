@@ -26,4 +26,16 @@ var sendFb = function(msg) {
     messenger.sendTextMessage(process.env.FB_RECIPIENT, msg);
 };
 
+var sendFbButton = function(msg) {
+
+    messenger.sendButtonsMessage(process.env.FB_RECIPIENT, msg, [
+        {
+            "type": "web_url",
+            "url": "https://skygarden.london/booking",
+            "title": "book now!"
+        }
+    ] )
+}
+
 exports.sendFb = sendFb;
+exports.sendFbButton = sendFbButton;

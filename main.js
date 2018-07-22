@@ -30,8 +30,10 @@ Promise.all(allCheckPromises)
         for (let k in values) {
             //console.log('Result:', (values[k] instanceof CheckTickets)? 'result: '+values[k].resultMsg : 'error: '+values[k]);
             if (values[k] instanceof CheckTickets && values[k].resultMsg!=='') {
-                msg.sendFb(values[k].resultMsg);
-            } else if (values[k].constructor===String) msg.sendFb(values[k]);
+                msg.sendFbButton(values[k].resultMsg);
+            } else if (values[k].constructor===String) {
+                msg.sendFb(values[k]);
+            }
         }
     }) // Promise.all(allCheckPromises).then()
     .catch((reason)=>{
