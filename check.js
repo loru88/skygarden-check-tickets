@@ -1,8 +1,3 @@
-'use strict';
-
-const START_DATE = new Date();
-const END_DATE = new Date(START_DATE.getFullYear(),START_DATE.getMonth()+1,START_DATE.getDate()); // check for 1 month
-const CHECK_DELAY_MSEC = 30000;
 const SHOW_ZERO_SPACES = false;
 const TIMEOUT = 60000;
 
@@ -79,8 +74,8 @@ class CheckTickets {
 			host: 'skygarden.bookingbug.com',
 			path: `/api/v1/37002/events?start_date=${this.dateToCheckStr}&end_date=${this.dateToCheckStr}`,
 			headers: {
-				'App-Id': 'f6b16c23', 
-				'App-Key': 'f0bc4f65f4fbfe7b4b3b7264b655f5eb',
+				'App-Id': process.env.BOOKING_APP_ID,
+				'App-Key': process.env.BOOKING_APP_KEY,
 				'Accept': 'application/hal+json, application/json',
 				'Host': 'skygarden.bookingbug.com',
 				'Origin': 'https://bespoke.bookingbug.com',
@@ -131,56 +126,4 @@ class CheckTickets {
 
 };
 
-/** ----------------------------------------------------------------------------------------------------
-* Send message to Telegram: "https://api.telegram.org/<bot_id>:<api_token>/sendMessage?chat_id=@<channel_name>&text=" & $msg
-*/
-function sendMsg(msg) {
-	const https = require('https');
-	const options = {
-		host: 'api.telegram.org',
-		path: `/<bot_id>:<api_token>/sendMessage?chat_id=@<channel_name>&text=${encodeURI(msg)}`,
-		headers: {
-		}
-	}
-	https.get(options, (res)=>{
-		res.on('error',()=>{
-			console.log('SkyGarden: sendMsg(): error:',res);
-		});
-	});
-}
-
-
-/** ----------------------------------------------------------------------------------------------------
-* Main
-*/
-
-console.log('SkyGarden: start checking...');
-//sendMsg('SkyGarden: start checking...');
-
-// create promise for each check, and wait for all promises are success, then sort the results by date and send the results
-var allCheckPromises = []; 
-
-// Convert curCheckDate to value before passing to function (to make it as pass-by-value)
-//   Reference: variable scope inside loop: https://stackoverflow.com/questions/750486/javascript-closure-inside-loops-simple-practical-example
-for (let curCheckDate = new Date(START_DATE); curCheckDate < new Date(END_DATE); curCheckDate.setDate(curCheckDate.getDate()+1)) {
-	let c = new CheckTickets(curCheckDate.toString());
-	allCheckPromises.push( c.checkAfterMax(CHECK_DELAY_MSEC) ); // return a promise with the CheckTickets object as the result
-}
-
-//console.log('All promises',allCheckPromises);
-Promise.all(allCheckPromises)
-	.then((values)=>{
-		console.log('All checks finished');
-		for (let k in values) {''
-			//console.log('Result:', (values[k] instanceof CheckTickets)? 'result: '+values[k].resultMsg : 'error: '+values[k]);
-			if (values[k] instanceof CheckTickets && values[k].resultMsg!=='') {
-				sendMsg(values[k].resultMsg);
-			} else if (values[k].constructor===String) sendMsg(values[k]);
-		}
-	}) // Promise.all(allCheckPromises).then()
-	.catch((reason)=>{
-		console.log('Some checks failed:',reason)
-		sendMsg(`Error in checking tickets: ${reason}`);
-	}) // Promise.all(allCheckPromises).catch()
-;
-
+module.exports = CheckTickets;

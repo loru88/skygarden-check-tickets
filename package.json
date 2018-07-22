@@ -1,0 +1,24 @@
+{
+  "name": "skygarden-check-tickets",
+  "version": "1.0.0",
+  "description": "A simple script to send message when free ticket for the Sky Garden, London is available",
+  "main": "main.js",
+  "scripts": {
+    "start": "node main.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/loru88/skygarden-check-tickets.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/loru88/skygarden-check-tickets/issues"
+  },
+  "homepage": "https://github.com/loru88/skygarden-check-tickets#readme",
+  "dependencies": {
+    "dotenv": "^6.0.0",
+    "fb-messenger": "^1.2.0"
+  }
+}
